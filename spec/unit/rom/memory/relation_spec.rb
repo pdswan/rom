@@ -59,5 +59,32 @@ describe ROM::Memory::Relation do
         { name: 'Joe', email: 'joe@doe.org', age: 12 }
       ])
     end
+
+    describe "nils" do
+      before do
+        dataset.insert(name: "Methuselah", email: "methuselah@doe.org", age: nil)
+        dataset.insert(name: "Nester", email: "nester@doe.org", age: nil)
+      end
+
+      it "orders nils last by default" do
+        expect(relation.order(:age, :name).to_a).to eq([
+          { name: 'Jane', email: 'jane@doe.org', age: 10 },
+          { name: 'Jade', email: 'jade@doe.org', age: 11 },
+          { name: 'Joe', email: 'joe@doe.org', age: 12 },
+          { name: "Nester", email: "nester@doe.org", age: nil },
+          { name: 'Methuselah', email: 'methuselah@doe.org', age: nil }
+        ])
+      end
+
+      it "can be configured to order nils first" do
+        expect(relation.order(:age, :name, nils: :first).to_a).to eq([
+          { name: "Nester", email: "nester@doe.org", age: nil },
+          { name: 'Methuselah', email: 'methuselah@doe.org', age: nil },
+          { name: 'Jane', email: 'jane@doe.org', age: 10 },
+          { name: 'Jade', email: 'jade@doe.org', age: 11 },
+          { name: 'Joe', email: 'joe@doe.org', age: 12 }
+        ])
+      end
+    end
   end
 end

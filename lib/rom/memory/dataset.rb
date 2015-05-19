@@ -44,11 +44,51 @@ module ROM
         map { |tuple| tuple.reject { |key| !names.include?(key) } }
       end
 
+      module Ordering
+        Nils = {
+          first: [
+            ->(a, b) { a.nil? ? -1 : nil },
+            ->(a, b) { b.nil? ? 1 : nil }
+          ],
+          last: [
+            ->(a, b) { a.nil? ? 1 : nil },
+            ->(a, b) { b.nil? ? -1 : nil }
+          ]
+        }
+
+        class Compare
+          def initialize(comparisons)
+            @comparisons = comparisons + [:<=>.to_proc]
+          end
+
+          def call(a, b)
+            comparisons.reduce(nil) do |result, comparison|
+              result || comparison.call(a, b)
+            end
+          end
+
+          private
+
+          attr_reader :comparisons
+        end
+      end
+
       # Sort a dataset
       #
       # @api public
       def order(*names)
-        sort_by { |tuple| tuple.values_at(*names) }
+        options = names.last.is_a?(Hash) ? names.pop : { nils: :last }
+        compare = Ordering::Compare.new(Ordering::Nils.fetch(options.fetch(:nils, :last)))
+
+        sort do |left, right|
+          names.reduce(0) do |order, name|
+            if order.zero?
+              compare.call(left[name], right[name])
+            else
+              order
+            end
+          end
+        end
       end
 
       # Insert tuple into a dataset
